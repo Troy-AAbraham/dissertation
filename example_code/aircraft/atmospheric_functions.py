@@ -16,25 +16,32 @@ def statsi(h):
     '''
     Interpolates atmospheric properties for a standard day. SI units.
     
-    Inputs
+    Parameters
     -----------
+    
     h : float
         altitude in meters
 
-    Output
+    Returns
     -----------
     h: float
         altitude in meters
+        
     z: float
         geopotential altitude in meters
+        
     t: float
         absolute temp in Kelvins
+        
     p: float
         pressure in N/m^2
+        
     d: float
         density in kg/m^3
+        
     a: float
         speed of sound in m/s
+        
     '''
     Psa = np.zeros(9)
     zsa = [0,11000,20000,32000,47000,52000,61000,79000,90000]
@@ -78,23 +85,29 @@ def statee(h):
     '''
     Converts SI units to english units.
         
-    Inputs
+    Parameters
     -----------
+    
     h : float
         geometric altitude in feet
 
-    Output
+    Returns
     -----------
     h: float
         geometric altitude in feet
+        
     z: float
         geopotential altitude in feet
+        
     t: float
         absolute temp in Rakines
+        
     p: float
         pressure in lbf/ft^2
+        
     d: float
         density in slugs/ft^3
+        
     a: float
         speed of sound in ft/s
     '''

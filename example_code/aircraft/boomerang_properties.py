@@ -11,12 +11,16 @@ class AircraftProperties:
         
         Parameters
         -----------
+        
         V: float
             airspeed to trim at in ft/s
+            
         H: float
             altitude in feet
+            
         cg_shift: array like
             manual shift in center of gravity location
+            
         inp_dir: string
             directory where aircraft properties input JSON is located
         '''
@@ -78,10 +82,14 @@ class AircraftProperties:
         '''
         Shifts aircraft moments of inertia to new location using PAT
         
+        Parameters
+        -----------
+        
         s: array like
             array defining the center of gravity shift
         m_cg: float
             mass of the vehicle
+            
         '''
         
         I1 = np.array([[self.Ixx, -self.Ixy, -self.Ixz],

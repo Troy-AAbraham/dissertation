@@ -2,16 +2,17 @@ from dynamics_analysis import dynamicAnalysis
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-# from matplotlib.ticker import FormatStrFormatter
-
 from handle_eigenvectors import *
 
-# options for saving result figures
+'''This is an example script of the bank angle sweep studies that are presented
+in my dissertation. '''
+
+# options for saving results
 case_label = 'BOOM_SCT_V355_RWD_LWD'
 directory = './results/'
 save_figs = True
 
-# initialize lists for results
+# initialize lists for storing results
 real_list_RWD = []
 imag_list_RWD = []
 ev_amps_RWD = []
@@ -42,6 +43,7 @@ p0_LWD_array = []
 q0_LWD_array = []
 r0_LWD_array = []
 
+# objects 
 derivatives_RWD = derivative_storage(nondim_derivs=False)
 derivatives_LWD = derivative_storage(nondim_derivs=False)
 
@@ -64,7 +66,7 @@ bank_angle_array = np.linspace(0.0,60.0,11)
 for i in range(len(bank_angle_array)):
     phi = np.deg2rad(bank_angle_array[i]) #rad
 
-    case = dynamicAnalysis(path='./', write_output = False, output_filename = 'eig_vals_boomerang.txt',
+    case = dynamicAnalysis(write_output = False, output_filename = 'eig_vals_boomerang.txt',
                             shss=SHSS, compressible=COMP, stall=STALL,
                             coords_approx= False, derivs_approx=False, cg_shift=cg_shift)
     case.solve_equilibrium_state(V, H, gamma, phi) 
@@ -103,7 +105,7 @@ for i in range(len(bank_angle_array)):
     
     phi = -np.deg2rad(bank_angle_array[i]) #rad
 
-    case = dynamicAnalysis(path='./', write_output = False, output_filename = 'eig_vals_boomerang.txt',
+    case = dynamicAnalysis(write_output = False, output_filename = 'eig_vals_boomerang.txt',
                             shss=SHSS, compressible=COMP, stall=STALL,
                             coords_approx= False, derivs_approx=False, cg_shift=cg_shift)
     case.solve_equilibrium_state(V, H, gamma, phi) 

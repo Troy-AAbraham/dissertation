@@ -4,16 +4,21 @@ def body_2_wind_vector(F_b,alpha,beta):
     
     '''Converts a body fixed force vector into a vector in the wind coordinate frame
     
-    Inputs
+    Parameters
     -----------
+    
     F_b: array_like
         body-fixed vector
+        
     alpha: float
-        angle of attak
+        angle of attack
+        
     beta: float
         sideslip angle
-    Output
+        
+    Returns
     -----------
+    
     F_w: array-like
         wind-coordinate force vector
     '''
@@ -34,12 +39,15 @@ def comp_2_body_mat(phi_c,theta_c,psi_c):
     
     Uses the form that is component to aircraft conversion.
     
-    Input
+    Parameters
     -----------
+    
     phi_c,theta_c,psi_c: floats
         Euler angles [rad]
-    Output
+        
+    Returns
     -----------
+    
     dir_cosine: array-like (3x3 matrix)
     '''
 
@@ -56,22 +64,29 @@ def comp_velocity(V_body,omega_body,p_body,dir_cos):
     Calculate the local velocity at a component as a result of aircraft
     velocity, rotational velocity, and component position.
     
-    Inputs
+    Parameters
     -----------
+    
     V_body: array_like
         vehicle body-fixed velocity vector
+        
     omega_body: array_like
         vehicle body-fixed roational velocity vector
+        
     p_body: array_like
         body-fixed position of the component relative to vehicle CG
-    Output
+        
+    Returns
     -----------
     V_comp: array-like
         Velocity vector in the components coordinate system
+        
     V_mag: float
         Velocity magnitude at the component
+        
     u_comp: array-like
         Unit velocity vector in the components coordinate system
+        
     '''
     # Eq. 3.130.3 in Hunsaker, Component contributions to the complete vehicle
     # V = [R]^-1 (V - P_c X w)
@@ -87,14 +102,17 @@ def vec_comp_2_body(vector_comp,dir_cosine):
     Converts vector in a components coordinate system to the aircrafts body fixed
     coordinate system.
     
-    Inputs
+    Parameters
     -----------
     vector: array_like
         component coordinate vector
+        
     dir_cosine: array-like (3x3 matrix)
         direction cosine matrix from component to body coordinates
-    Output
+        
+    Returns
     -----------
+    
     vector_body: array-like
         aircraft body-fixed vector
     '''
@@ -107,21 +125,25 @@ def solve_Vb_vector(alpha, beta, V):
     ''' body fixed velocity components from angle of attack and sideslip 
     angle 
     
-    Inputs
+    Parameters
     -----------
     alpha: float
         angle of attack
+        
     beta: float
         sideslip angle
+        
     V: float
         true airspeed
 
-    Output
+    Returns
     -----------
     u: float
         body-fixed x translational velocity component
+        
     v: float
         body-fixed y translational velocity component
+        
     w: float
         body-fixed z translational velocity component
     

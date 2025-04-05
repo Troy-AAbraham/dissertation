@@ -8,11 +8,14 @@ class PropModel:
         variables.
         
         Values that could be updated in the boomerang_thrust_model.json
+        
         dr: float
             propeller diameter in ft
+            
         Pp_R and Pp_L: array like
             arrays defining the position (x,y,z) of the propeller component 
             relative to the aircrafts center of gravity in ft
+            
         phi,theta,psi: float
             Euler angles defining the orientation of propeller components
             relative to the aircrafts orientation, given in deg in the JSON.
@@ -106,6 +109,7 @@ class PropModel:
         Solves for the coefficients that will define the equations for thrust, 
         power, normal force, and yawing moment coefficients. Based on the methods
         outline in Simulation of Flight by Hunsaker (unpublished as of 3/30/25)
+        
         '''
         Kc = self.Kc
         Kc2 = Kc*Kc
@@ -134,18 +138,24 @@ class PropModel:
         Solves for the thrust, power, normal force derivative, and yawing moment
         derivative as a function of advance ratio
         
-        Input
+        Parameters
         -----------
+        
         J: float
             Propeller advance ratio - dimensionless
-        Output
+            
+        Returns
         -----------
+        
         CT: float
             Thrust coefficient
+            
         CP: float
             Power coefficient
+            
         CN_a: float
             Normal force coefficient derivative
+            
         Cn_a: float
             Yawing moment coefficient derivative
         '''
@@ -164,13 +174,15 @@ class PropModel:
         
         Uses the form that is propeller to aircraft conversion.
         
-        Input
+        Parameters
         -----------
         phi_c,theta_c,psi_c: floats
             Euler angles [rad]
-        Output
+            
+        Returns
         -----------
         dir_cosine: array-like (3x3 matrix)
+        
         '''
 
         SP,ST,SPS = np.sin(phi_c), np.sin(theta_c), np.sin(psi_c)
@@ -186,22 +198,28 @@ class PropModel:
         Calculate the local velocity at the propeller as a result of aircraft
         translational velocity, rotational velocity, and propeller position.
         
-        Inputs
+        Parameters
         -----------
         V_body: array_like
             vehicle body-fixed velocity vector
+            
         omega_body: array_like
             vehicle body-fixed roational velocity vector
+            
         Pp_body: array_like
             body-fixed position of the component relative to vehicle CG
-        Output
+            
+        Returns
         -----------
         V_comp: array-like
             Velocity vector in the propellers coordinate system
+            
         V_mag: float
             Velocity magnitude at the propeller
+            
         u_comp: array-like
             Unit velocity vector in the propellers coordinate system
+            
         '''
         
         V_comp = np.matmul(np.linalg.inv(self.dir_cos),(V_body - np.cross(Pp_body,omega_body)))
@@ -215,16 +233,21 @@ class PropModel:
         Find the advance ratio (J) that will produce the desired thrust for the
         given airspeed and air density.
         
-        Inputs
+        Parameters
         -----------
+        
         T: float
             desired thrust
+            
         Vinf: float
             airspeed
+            
         rho: float
             airdensity
-        Output
+            
+        Returns
         -----------
+        
         J: float
             Propeller advance ratio - dimensionless
         '''
@@ -239,26 +262,35 @@ class PropModel:
         propeller force and moment coefficients as a function of air density, 
         propeller rotation rate, and alpha. Then dimensionalizes those coefficients.
         
-        Inputs
+        Parameters
         -----------
+        
         V_body: array_like
             vehicle body-fixed velocity vector
+            
         omega_body: array_like
             vehicle body-fixed roational velocity vector
+            
         Pp_body: array_like
             body-fixed position of the component relative to vehicle CG
+            
         rho: float
             atmospheric density
+            
         omega: float
             propeller rotation rate, driven by throttle setting tau
+            
         delta: int (1 or -1)
             defines rotor as right handed (1) or left handed (-1)
-        Ouputs
+            
+        Returns
         -----------
         F_vec: array_like
             vehicle body-fixed force vector
+            
         M_vec: array_like
             vehicle body-fixed moment vector
+            
         '''
         
         # find velocity in the propeller coordinate system
@@ -308,25 +340,32 @@ class PropModel:
         rotation rate of the left engine is then determined in order to maintain
         no yawing moment resulting from the thrust of both engines.
         
-        Inputs
+        Parameters
         -----------
+        
         tau: float
             throttle setting, currently not limited
+            
         V: float
             vehicle airspeed
+            
         V_vec: array_like
             vehicle body-fixed velocity vector
+            
         omega_body: array_like
             vehicle body-fixed roational velocity vector
+            
         rho: float
             atmospheric density
             
-        Ouputs
+        Returns
         -----------
         F_vec: array_like
             Vehicle body-fixed propeller force vector
+            
         M_vec: array_like
             vehicle body-fixed propeller moment vector
+            
         '''
         # positions of the two propellers after a cg shift in the body coordinate system
         Pp_R = [self.Pp_R[0] - cg_shift[0], self.Pp_R[1] - cg_shift[1], self.Pp_R[2] - cg_shift[2]]

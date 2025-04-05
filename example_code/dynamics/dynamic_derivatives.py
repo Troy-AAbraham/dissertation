@@ -192,7 +192,7 @@ class solveDerivatives:
         '''
         Solves for the aerodynamic derivatives at the specified trim condition
         
-        Ouputs
+        Returns
         -----------
         self.derivs_sol: object
             derivative storage object
@@ -242,14 +242,14 @@ class solveDerivatives:
     def force_derivs(self, Fm2, Fm1, Fp1, Fp2, delta):
         '''fourth order central difference
         
-        Inputs
+        Parameters
         -----------
         Fm1, Fm2, Fp1, Fp2: float
             function values at steps from equilibrium value
         delta: float
             finite difference step size
 
-        Outputs
+        Returns
         -----------
         df_prime: float
             derivative value at equilibrium point
@@ -258,15 +258,45 @@ class solveDerivatives:
         return df_prime
 
     def solve_numeric_derivatives_simple(self, du, dv, dw, dp, dq, dr, dda, dde, ddr, dtau):
+            
+        """
+        Compute the numeric derivatives of body-fixed forces and moments using a fourth-order central difference method.
         
-        '''fourth order central difference
-        
-        Inputs
-        -----------
-        du, dv, dw, dp, dq, dr, dda, dde, ddr, dtau: float
-            parameter finite step size for body-fixed velocities, rotation rates,
-            and control inputs
-        '''
+        This method calculates the partial derivatives of the body-fixed forces and moments with respect to the 
+        body-fixed velocities (u, v, w), rotation rates (p, q, r), and control inputs (da, de, dr, tau). 
+        It evaluates the aerodynamic forces and moments at various perturbations to obtain the derivatives.
+    
+        Parameters
+        ----------
+        du : float
+            Perturbation step size for the body-fixed forward velocity (u).
+        dv : float
+            Perturbation step size for the body-fixed lateral velocity (v).
+        dw : float
+            Perturbation step size for the body-fixed vertical velocity (w).
+        dp : float
+            Perturbation step size for the body-fixed roll rate (p).
+        dq : float
+            Perturbation step size for the body-fixed pitch rate (q).
+        dr : float
+            Perturbation step size for the body-fixed yaw rate (r).
+        dda : float
+            Perturbation step size for the aileron control input (da) in radians.
+        dde : float
+            Perturbation step size for the elevator control input (de) in radians.
+        ddr : float
+            Perturbation step size for the rudder control input (dr) in radians.
+        dtau : float
+            Perturbation step size for the thrust control input (tau).
+    
+        Notes
+        -----
+        - The function uses the equilibrium values of velocity, rotation rates, and control inputs as the base states 
+          to calculate the derivatives.
+        - The results include the derivatives of the aerodynamic forces (Fx, Fy, Fz) and moments (Mx, My, Mz) with 
+          respect to the velocities, rotation rates, and control inputs.
+        - The method employs a fourth-order central difference scheme to estimate the derivatives.
+        """
         
         # set equilibrium values
         u_o = self.eq_velo[0]
@@ -535,6 +565,7 @@ class solveDerivatives:
         print('\n')
                 
     def set_phillips_approx(self, coords = False, derivs = False):
+
         '''
         Sets either the coordinate system assumption or symmetric aircraft assumption
         to derivatives and inertial values
@@ -574,6 +605,7 @@ class solveDerivatives:
             self.Mzb_q = 0.0
 
     def convert_all_bf2wind(self):
+        
         '''
         Convert derivatives and inertias to wind coordinates.
         '''

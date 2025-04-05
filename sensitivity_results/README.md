@@ -1,4 +1,3 @@
-# dissertation_results
 This is a repository of results from my dissertation research.
 
 These results pertain to the eigenvalue and eigenvector sensitivities that are presented in Chapter 5 of my dissertation which is titled "Linearized Dynamics of Asymmetric Aircraft."

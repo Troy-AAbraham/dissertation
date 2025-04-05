@@ -13,12 +13,40 @@ from dynamic_derivatives import solveDerivatives
 
 class dynamicAnalysis:
             
-    def __init__(self, path='./', write_output = False, output_filename = 'dynamic_output.txt',
+    def __init__(self,  write_output = False, output_filename = 'dynamic_output.txt',
                  shss=False, compressible=False, stall=False, coords_approx = False, derivs_approx = False,
                  cg_shift=[0.0, 0.0, 0.0]):
         '''
         Load all the constant value aircraft parameters and analysis inputs
+        
+        Parameters
+        -----------
+        
+        write_output: boolean
+            flag to write eigenvalues to file
+            
+        output_filename: string
+            eigenvalue output filename
+            
+        shss: boolean
+            sets trim type to steady-heading sideslip, otherwise defaults to SCT
+            
+        compressible: bool
+            unused
+            
+        stall: bool
+            unused
+            
+        coords_approx: bool
+            apply the coordinate system approximation to derivatives and inertia components
+            
+        derivs_approx: bool
+            apply the symmetric derivatve approximation
+            
+        cg_shift: array-like
+               vector defining shift in CG
         '''
+        
         self.write_output = write_output
         self.output_filename = output_filename
         
@@ -36,6 +64,18 @@ class dynamicAnalysis:
             
     def update_aircraft_properties(self, V, H):
         
+        '''
+        Updates aircraft property object and internal values
+        
+        Parameters
+        -----------
+        
+        V: float
+            total airspeed, ft/s
+            
+        H: float
+            altitude, ft
+        '''
         
         self.aircraft_properties = AircraftProperties(V = V, H = H, cg_shift = self.cg_shift, Gamma = self.Gamma, inp_dir = aero_directory)
         
@@ -74,32 +114,43 @@ class dynamicAnalysis:
         '''
         Given airspeed, altitude, CG shift, climb angle,
         and bank angle, solve equilibrium trim condition.
+        
+        Parameters
+        -----------
+        
+        V: float
+            total airspeed, ft/s
+            
+        H: float
+            altitude, ft
+            
+        gamma: float
+            climb angle, rad
+            
+        phi: float
+            bank angle, rad
+            
         '''
+        # update aircraft properties
         self.update_aircraft_properties(V, H)
-        # print('hx - before trim: ', self.hxb)
-
+        
+        #solve for trim solution
         self.solution = solve_trim(aero_model = self.aeroModel, aircraft_props=self.aircraft_properties,
                               gamma = gamma, phi = phi, cg_shift=self.cg_shift,
                               shss = self.shss, compressible = self.compressible, stall = self.stall)
         
         #update after trim solution to get correct angular momentum from propellers
         self.hxb = self.aircraft_properties.hx
-        # print('hx - after trim: ', self.hxb)
         
         #parse trim solution values
         tau, alpha, beta, da, de, dr = self.solution.x
         u, v, w, p, q, r, phi, theta = self.solution.states
         
-        # print('u, v, w, p, q, r:', u, v, w, p, q, r)
-        
         FX, FY, FZ, Mx, My, Mz = self.solution.FM_dim
         [CL, CS, CD, Cl, Cm, Cn] = self.solution.FM
         
-        # print('\nBody Force/Moment from trim solution:')
-        # print(FX, FY, FZ, Mx, My, Mz)
-        # print('\n')
-
         # set equilibrium velocity vector depending on approximations used
+        # and trim solution
         if self.coords_approx:
             self.eq_velo = np.array([self.V,0.0,0.0])
         else:
@@ -121,6 +172,13 @@ class dynamicAnalysis:
         '''        
         Solves for the required body-fixed derivatives.
         
+        Parameters
+        -----------
+        
+        print_latex_tables: boolean
+            flag to print derivative solutions
+            
+        
         '''
                 
         # initialize derivative class
@@ -137,7 +195,15 @@ class dynamicAnalysis:
             
     def set_deriv_solution(self,deriv_solution):
         
-        '''Sets derivatives in the current class.'''
+        '''Sets derivatives in the current class.
+        
+        Parameters
+        -----------
+        
+        deriv_solution: object
+            parse derivatives from the deriv_solution object
+            
+        '''
         
         self.Fxb_u = deriv_solution.Fxb_u
         self.Fxb_v = deriv_solution.Fxb_v
@@ -247,20 +313,25 @@ class dynamicAnalysis:
                                         [0.0,                         0.0,                         0.0,                         0.0],
                                         [0.0,                         0.0,                         0.0,                         0.0]])
     
-    def solve_dynamics_system(self, print_results = True, print_velo_checks = False, print_latex_tables = False, remove_xyz = False, norm_types = False, body_position = False):
+    def solve_dynamics_system(self, print_results = True, remove_xyz = False, norm_types = False):
 
         '''
-        Solves the LTI system and report eigensolution.
+        Solves the LTI system and report eigensolution. Uses the dimensional
+        linearized equations of motion presented in my dissertation.
         
-        Inputs
+        Parameters
         -----------
+        
         print_results: boolean
             flag for printing eigenvalue and eigenvector solutions
+            
         remove_xyz: boolean
             flag for removing the xyz components from the LTI
+            
         norm_types: boolean
             flag for normalizing the eigenvector components relative to the seperate
             state variable types (velocities, rotation rates, positions, orientations)
+
         '''
         
         # set asymmetrix producats of inertia to zero if symmetric aircraft assumption is applied
@@ -303,7 +374,6 @@ class dynamicAnalysis:
         self.q0 = q_o
         self.r0 = r_o
 
-        # print('u, v, w, p, q, r:', u_o, v_o, w_o, p_o, q_o, r_o)
         print('\n')
         
         # solve aircraft mass, represented as ratio in the linear EOM
@@ -387,9 +457,6 @@ class dynamicAnalysis:
         print('\n'.join([''.join(['{:>16.6f}'.format(item) for item in row]) 
                 for row in A_matrix]))
         
-        if print_latex_tables == True:
-            self.print_latex_tables(A_matrix)
-        
         print('\n')
         print('B-Matrix')
         print('\n'.join([''.join(['{:>16.6f}'.format(item) for item in row]) 
@@ -443,7 +510,7 @@ class dynamicAnalysis:
                     # orientation
                     self.eigvecs[9:12,i] = self.eigvecs[9:12,i] / np.sqrt(np.sum(np.square(np.abs(self.eigvecs[9:12,i]))))
         
-        # sort eigen vectors according to type first (real and imaginary) and then magnitude
+        # sort eigenvalues according to type first (real and imaginary) and then magnitude
         self.eigvals, i_sort = self.sort_eigenvalues_and_indices(self.eigvals)
         # match eigenvectors to sorted eigenvalues
         self.eigvecs = self.eigvecs[:,i_sort]
@@ -451,12 +518,14 @@ class dynamicAnalysis:
         self.amps = np.abs(self.eigvecs)
         self.phase = np.rad2deg(np.arctan2(np.imag(self.eigvecs),np.real(self.eigvecs)))
         
+        # parse and generate dynamic stability parameters
         self.eigreal = np.real(self.eigvals[:])
         self.eigimag = np.imag(self.eigvals[:])
         self.sigma = -np.real(self.eigvals[:])
         self.omegad = np.abs(np.imag(self.eigvals))
         self.period = 2.0*np.pi/self.omegad
         
+        # print results to terminal
         if print_results == True:
             # print eigenvalues
             print('\nEigenvalues') 
@@ -502,26 +571,28 @@ class dynamicAnalysis:
                     print('{:>28}'.format('\u0394r'),  '{:>28.10f}'.format(self.eigvecs[5,i]), '{:>28.12f}'.format(self.phase[5,i]), '{:>28.12f}'.format(self.amps[5,i]))
                     print('{:>28}'.format('\u0394\u03C6:'),  '{:>28.10f}'.format(self.eigvecs[6,i]), '{:>28.12f}'.format(self.phase[6,i]), '{:>28.12f}'.format(self.amps[6,i]))
                     print('{:>28}'.format('\u0394\u03B8:'),  '{:>28.10f}'.format(self.eigvecs[7,i]), '{:>28.12f}'.format(self.phase[7,i]), '{:>28.12f}'.format(self.amps[7,i]))
-                    print('{:>28}'.format('\u0394\u03C8:'),  '{:>28.10f}'.format(self.eigvecs[8,i]), '{:>28.12f}'.format(self.phase[8,i]), '{:>28.12f}'.format(self.amps[8,i]))
-
-        if print_velo_checks == True:        
-            u_o_check = W_g*u_o
-            v_o_check = W_g*v_o
-            w_o_check = W_g*w_o
-            
-            p_o_check = W_g*p_o
-            q_o_check = W_g*q_o
-            r_o_check = W_g*r_o
-            
-            print('W/G*uo = ', u_o_check)
-            print('W/G*vo = ', v_o_check)
-            print('W/G*wo = ', w_o_check)
-            
-            print('W/G*po = ', p_o_check)
-            print('W/G*qo = ', q_o_check)
-            print('W/G*ro = ', r_o_check)     
+                    print('{:>28}'.format('\u0394\u03C8:'),  '{:>28.10f}'.format(self.eigvecs[8,i]), '{:>28.12f}'.format(self.phase[8,i]), '{:>28.12f}'.format(self.amps[8,i]))   
         
     def solve_nondim_dynamics_system_hm(self, print_results = True, remove_xyz = False, norm_types = False):
+        
+        '''
+        Solves the LTI system and report eigensolution. Uses the nondimensional
+        linearized equations of motion base on the Moulton and Hunsaker nondimensionalization.
+        
+        Parameters
+        -----------
+        
+        print_results: boolean
+            flag for printing eigenvalue and eigenvector solutions
+            
+        remove_xyz: boolean
+            flag for removing the xyz components from the LTI
+            
+        norm_types: boolean
+            flag for normalizing the eigenvector components relative to the seperate
+            state variable types (velocities, rotation rates, positions, orientations)
+
+        '''
                                 
         V_o = self.V
         u_o = self.eq_velo[0]
@@ -564,8 +635,6 @@ class dynamicAnalysis:
         r_o = r_o*self.V/self.g
         
         print('\n')
-        
-        # W_g = self.W/self.g
         
         # nondimensionalize inertias
         ell_xzb = self.Ixzb/self.Ixxb
@@ -812,6 +881,25 @@ class dynamicAnalysis:
 
 
     def solve_nondim_dynamics_system_ph(self, print_results = True, remove_xyz = False, norm_types = False):
+        
+        '''
+        Solves the LTI system and report eigensolution. Uses the nondimensional
+        linearized equations of motion base on the Phillips nondimensionalization.
+        
+        Parameters
+        -----------
+        
+        print_results: boolean
+            flag for printing eigenvalue and eigenvector solutions
+            
+        remove_xyz: boolean
+            flag for removing the xyz components from the LTI
+            
+        norm_types: boolean
+            flag for normalizing the eigenvector components relative to the seperate
+            state variable types (velocities, rotation rates, positions, orientations)
+
+        '''
                         
         V_o = self.V
         u_o = self.eq_velo[0]
@@ -857,7 +945,6 @@ class dynamicAnalysis:
         q_o = q_o*l_ref/V_o
         r_o = r_o*l_ref/V_o
         
-        # print('u, v, w, p, q, r:', u_o, v_o, w_o, p_o, q_o, r_o)
         print('\n')
         
         W_g = self.W/self.g
@@ -1163,7 +1250,7 @@ if __name__ == "__main__":
     STALL = False
     
     '''RUN CASE'''
-    case = dynamicAnalysis(path='./', write_output=False, output_filename = 'test.txt',
+    case = dynamicAnalysis(write_output=False, output_filename = 'test.txt',
                             shss=SHSS, compressible=COMP, coords_approx=False, derivs_approx=False,
                             stall=STALL, cg_shift=cg_shift)
     
@@ -1179,8 +1266,7 @@ if __name__ == "__main__":
 
     dim_type_select = ['TA', 'hm', 'ph']
     
-    
-    dim_type = 2
+    dim_type = 1
     
     if dim_type_select[dim_type] == 'TA':
     

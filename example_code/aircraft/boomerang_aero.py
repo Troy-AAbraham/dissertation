@@ -621,33 +621,45 @@ class BoomerangAero:
         
         '''Generates dimensional forces and moments for flight condition and CG shift.
         
-        Inputs
+        Parameters
         -----------
+        
         alpha, beta: float
             aerodynamic angles, rad
+            
         de, da, dr: float
             control surface deflections, rad
+            
         pbar, qbar, rbar: float
             nondimensional rotation rates
+            
         tau: float
             throttle setting, currently not limited
+            
         V: float
             vehicle airspeed
+            
         H: float
             altitude
+            
         rho_0: float
             sea-level air density
+            
         cg_shift: array_like
             shift in center of gravity in body-fixed coordinates, units of ft
+            
         thrust_off: boolean
             flag to disable thrust forces and moments
+            
         aircraft_props: object (class)
             aircraft properties class
             
-        Ouputs
+        Returns
         -----------
+        
         FM, FM_aero, FM_thrust: array_like
             force and moment vectors
+            
         '''
         
         # aero coefficients at this operation condition

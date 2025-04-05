@@ -19,17 +19,28 @@ class TrimSolution:
         self.num_iters = 0.
 
 def climb2theta(V_vec,gamma,phi):
+    
     '''Converts a given climb angle to an elevation angle for a given bank
     angle and body-fixed velocity vector.
 
     Parameters
     -----------
-    V: array_like
+    
+    V_vec: array_like
         body-fixed velocity vector
+        
     gamma: float
         climb angle in radians
+        
     phi: float
         bank angle in radians
+        
+    Returns
+    -----------
+    
+    theta: float
+        elevation angle in radians
+        
     '''
     u,v,w = V_vec
     Vmag = np.sqrt(u*u + v*v + w*w)
@@ -52,19 +63,31 @@ def climb2theta(V_vec,gamma,phi):
         return theta2
     
 def SCT_rot_rates(V_vec,phi,theta,g):
+    
     '''Calculates the equilibrium body-fixed rotation rates in a
     steady-coordinated turn.
 
     Parameters
     -----------
-    V: array_like
+    
+    V_vec: array_like
         body-fixed velocity vector
+        
     phi: float
         bank angle in radians
+        
     theta: float
         elevation angle in radians
+        
     g: float
         gravitational acceleration at altitude
+        
+    Returns
+    -----------
+    
+    numpy array: array_like
+        body-fixed rotation rates
+        
     '''
     
     u,v,w = V_vec
@@ -124,7 +147,63 @@ def _f6(Mz, theta, phi, pqr, uvw, props):
 
 def _calc_forces(state, phi, gamma, aero_model, aircraft_props, cg_shift, shss, compressible, stall):
     
-    '''Calculates forces and moments using the aircrafts aero model'''
+    """
+    Calculates aerodynamic forces and moments based on the aircraft's aerodynamic model.
+    
+    This function computes the forces and moments acting on the aircraft using its 
+    aerodynamic model and state parameters, including the aircraft's velocity, 
+    attitude angles, and aerodynamic coefficients.
+
+    Parameters
+    ----------
+    state : list or array
+        A list containing the state variables [tau, alpha, beta, da, de, dr].
+        - tau: time
+        - alpha: angle of attack
+        - beta: sideslip angle
+        - da: aileron deflection
+        - de: elevator deflection
+        - dr: rudder deflection
+    
+    phi : float
+        Bank angle in radians.
+    
+    gamma : float
+        Flight path angle in radians.
+    
+    aero_model : object
+        Aerodynamic model object used to calculate aerodynamic forces and moments.
+    
+    aircraft_props : object
+        Aircraft properties object containing parameters like velocity, gravity, 
+        wing dimensions, air density, etc.
+    
+    cg_shift : array like, floats
+        Center of gravity shift.
+    
+    shss : bool
+        Flag to indicate if the aircraft is in steady-heading sideslip
+    
+    compressible : bool
+        Flag to indicate if compressibility effects should be modeled (UNUSED).
+    
+    stall : bool
+        Flag to indicate if stall conditions should be should be modeled (UNUSED).
+
+    Returns
+    -------
+    FM : array like
+        The calculated aerodynamic forces and moments.
+    
+    [u, v, w] : list
+        A list containing the velocity components [u, v, w].
+    
+    [p, q, r] : list
+        A list containing the rotational rates [p, q, r].
+    
+    theta : float
+        The flight path angle in radians.
+    """
 
     V = aircraft_props.V
     g = aircraft_props.g
@@ -159,7 +238,61 @@ def _calc_forces(state, phi, gamma, aero_model, aircraft_props, cg_shift, shss, 
     return FM, [u, v, w], [p, q, r], theta
 
 def solve_jacobian(trim_state, phi, theta, gamma, aero_model, aircraft_props, cg_shift, shss, compressible, stall, delta=0.001):
-    # generate the jacobian for Newtons method
+    
+    """
+    Generates the Jacobian matrix for Newton's method.
+
+    This function calculates the Jacobian matrix for the given trim state by 
+    numerically approximating the partial derivatives of the system of 
+    aerodynamic forces and moments with respect to the trim state variables.
+
+    Parameters
+    ----------
+    trim_state : list or array
+        The nondimensional trim state variables [tau, alpha, beta, da, de, dr].
+        - tau: throttle setting
+        - alpha: angle of attack
+        - beta: sideslip angle
+        - da: aileron deflection
+        - de: elevator deflection
+        - dr: rudder deflection
+
+    phi : float
+        Bank angle in radians.
+    
+    theta : float
+        Elevation (pitch) angle in radians.
+    
+    gamma : float
+        Flight path angle in radians.
+    
+    aero_model : object
+        Aerodynamic model object used to calculate aerodynamic forces and moments.
+    
+    aircraft_props : object
+        Aircraft properties object.
+    
+    cg_shift : array like, floats
+        Center of gravity shift.
+    
+    shss : bool
+        Flag to indicate if the aircraft is in steady-heading sideslip
+    
+    compressible : bool
+        Flag to indicate if compressibility effects should be modeled (UNUSED).
+    
+    stall : bool
+        Flag to indicate if stall conditions should be should be modeled (UNUSED).
+
+    delta : float, optional
+        Perturbation value used for numerical differentiation (default is 0.001).
+
+    Returns
+    -------
+    J : ndarray
+        The Jacobian matrix (6x6) of partial derivatives, used for Newton's method.
+    """
+    
     [tau, alpha, beta, da, de, dr] = trim_state
     J = np.zeros((6, 6))
     
@@ -177,34 +310,42 @@ def solve_jacobian(trim_state, phi, theta, gamma, aero_model, aircraft_props, cg
 
 def solve_trim(aero_model, aircraft_props, gamma = 0.0, phi = 0.0,
                cg_shift=[0., 0., 0.], shss = False, compressible = False,
-               stall = False, fixed_point = False, **kwargs):
+               stall = False, **kwargs):
     
     '''
     Solves for trim in either a steady coordinated turn or a steady-heading sidelsip.
     Compressible and stall inputs are not currently used.
     
-    Input
+    Parameters
     -----------
     aero_model: object
         aircraft aerodynamic model
-    aero_props: object
-        aircraft property object
-    gamma: float
-        climb angle
-    phi: float
-        bank angle
         
-    Output
-    -----------
-    CT: float
-        Thrust coefficient
-    CP: float
-        Power coefficient
-    CN_a: float
-        Normal force coefficient derivative
-    Cn_a: float
-        Yawing moment coefficient derivative
+    aircraft_props: object
+        aircraft property object
+        
+    gamma : float
+        Flight path angle in radians.
+        
+    phi : float
+        Bank angle in radians.
     
+    cg_shift : array like , floats
+        Center of gravity shift.
+    
+    shss : bool
+        Flag to indicate if the aircraft is in steady-heading sideslip
+    
+    compressible : bool
+        Flag to indicate if compressibility effects should be modeled (UNUSED).
+    
+    stall : bool
+        Flag to indicate if stall conditions should be should be modeled (UNUSED).
+
+    Returns
+    -----------
+    trim_solution: object
+        see the trim solution class at the top of this script
     '''
     # convergence threshold
     threshold = kwargs.get("tol", 1e-9)
@@ -242,11 +383,6 @@ def solve_trim(aero_model, aircraft_props, gamma = 0.0, phi = 0.0,
         FM, [u, v, w], [p, q, r], theta = _calc_forces(trim_state, phi, gamma, aero_model, aircraft_props, cg_shift, shss, compressible, stall)
         [Fx, Fy, Fz, Mx, My, Mz] = FM
         
-        # if fixed_point:
-        #     trimstate_p1, nums = fpi(tau, alpha, beta, [p, q, r], de, da, dr, [u, v, w],
-        #                               phi, theta, aero_model, FM, aircraft_props)
-        # else:
-        
         f = [_f1, _f2, _f3, _f4, _f5, _f6]
         
         # generate residuals for current iteration
@@ -281,6 +417,7 @@ def solve_trim(aero_model, aircraft_props, gamma = 0.0, phi = 0.0,
     [CL, CS, CD, Cl, Cm, Cn] = CFM
 
     if verbose:
+        # print trim solution parameters of interest
         print("------ Trim Solution ------")
         print("------ Boomerang ------")
         print(f"Elevation Angle (deg.) : {theta*180./np.pi:1.16g}")
@@ -300,6 +437,7 @@ def solve_trim(aero_model, aircraft_props, gamma = 0.0, phi = 0.0,
         print(f"hx (slugs-ft^2/s) : {hx:1.16g}")
         print(f"Number of Iterations : {number_of_iterations:d}")
         print(f"Final Error: {nums}")
+        
     # initialize trim solution object
     solution = TrimSolution()
     
